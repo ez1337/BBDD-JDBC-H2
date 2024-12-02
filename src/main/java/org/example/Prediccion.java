@@ -1,55 +1,113 @@
 package org.example;
 
+import java.util.List;
+
 public class Prediccion {
+    private String lugar;
     private String fecha;
+    private List<String> estadoCielo;
     private double temperaturaMax;
     private double temperaturaMin;
-    private double ventoManha;
-    private double ventoTarde;
-    private double ventoNoite;
-    private double precipitacionManha;
-    private double precipitacionTarde;
-    private double precipitacionNoite;
-    private double coberturaNubosaManha;
-    private double coberturaNubosaTarde;
-    private double coberturaNubosaNoite;
+    private double precipitacionTotal;
+    private double viento;
+    private double coberturaNubosa;
+    private double humedad;
 
-    public Prediccion(String fecha, double temperaturaMax, double temperaturaMin,
-                      double ventoManha, double ventoTarde, double ventoNoite,
-                      double precipitacionManha, double precipitacionTarde, double precipitacionNoite,
-                      double coberturaNubosaManha, double coberturaNubosaTarde, double coberturaNubosaNoite) {
+    public Prediccion(String lugar, String fecha, List<String> estadoCielo, double temperaturaMax, double temperaturaMin, double precipitacionTotal,
+                      double velocidadViento, double coberturaNubosa, double humedad) {
+        this.lugar = lugar;
         this.fecha = fecha;
+        this.estadoCielo = estadoCielo;
         this.temperaturaMax = temperaturaMax;
         this.temperaturaMin = temperaturaMin;
-        this.ventoManha = ventoManha;
-        this.ventoTarde = ventoTarde;
-        this.ventoNoite = ventoNoite;
-        this.precipitacionManha = precipitacionManha;
-        this.precipitacionTarde = precipitacionTarde;
-        this.precipitacionNoite = precipitacionNoite;
-        this.coberturaNubosaManha = coberturaNubosaManha;
-        this.coberturaNubosaTarde = coberturaNubosaTarde;
-        this.coberturaNubosaNoite = coberturaNubosaNoite;
+        this.precipitacionTotal = precipitacionTotal;
+        this.viento = velocidadViento;
+        this.coberturaNubosa = coberturaNubosa;
+        this.humedad = humedad;
     }
 
-    // Getters y Setters para todos los campos
+    public String getFecha() {
+        return fecha;
+    }
+
+    public void setFecha(String fecha) {
+        this.fecha = fecha;
+    }
+
+    public String getLugar() {
+        return lugar;
+    }
+
+    public void setLugar(String lugar) {
+        this.lugar = lugar;
+    }
+
+    public List<String> getEstadoCielo() {
+        return estadoCielo;
+    }
+
+    public void setEstadoCielo(List<String> estadoCielo) {
+        this.estadoCielo = estadoCielo;
+    }
+
+    public double getTemperaturaMax() {
+        return temperaturaMax;
+    }
+
+    public void setTemperaturaMax(double temperaturaMax) {
+        this.temperaturaMax = temperaturaMax;
+    }
+
+    public double getTemperaturaMin() {
+        return temperaturaMin;
+    }
+
+    public void setTemperaturaMin(double temperaturaMin) {
+        this.temperaturaMin = temperaturaMin;
+    }
+
+    public double getPrecipitacionTotal() {
+        return precipitacionTotal;
+    }
+
+    public void setPrecipitacionTotal(double precipitacionTotal) {
+        this.precipitacionTotal = precipitacionTotal;
+    }
+
+    public double getViento() {
+        return viento;
+    }
+
+    public void setViento(double viento) {
+        this.viento = viento;
+    }
+
+    public double getCoberturaNubosa() {
+        return coberturaNubosa;
+    }
+
+    public void setCoberturaNubosa(double coberturaNubosa) {
+        this.coberturaNubosa = coberturaNubosa;
+    }
+
+    public double getHumedad() {
+        return humedad;
+    }
+
+    public void setHumedad(double humedad) {
+        this.humedad = humedad;
+    }
 
     @Override
     public String toString() {
-        return "Prediccion: " +
-                "fecha : " + fecha + '\n' +
-                " Temperatura maxima: " + temperaturaMax +
-                ", Temperatura minima: " + temperaturaMin +
-                ". Vento: maña:" + ventoManha +
-                ", tarde:" + ventoTarde +
-                ", noite: " + ventoNoite +
-                "\n Precipitacion: maña:" + precipitacionManha +
-                ", tarde:" + precipitacionTarde +
-                ", noite:" + precipitacionNoite +
-                ", Cobertura nubosa: maña:" + coberturaNubosaManha +
-                ", tarde: " + coberturaNubosaTarde +
-                ", noite:" + coberturaNubosaNoite +
-                "\n --------------------------------------------------------------";
+        return  lugar + "\n" +
+                "Prediccion del dia: " + fecha +
+                "\nestado del cielo: " + estadoCielo +
+                ", temperatura maxima: " + temperaturaMax + " ºC" +
+                ", temperatura minima: " + temperaturaMin + " ºC" +
+                ", \nprecipitacion total: " + precipitacionTotal + " l/m2" +
+                ", velocidad del viento: " + viento + " km/h" +
+                ", cobertura nubosa: " + coberturaNubosa + " %"+
+                ", humedad relativa: " + humedad + " % \n -----------------------------------------------------------------------------";
     }
-
 }

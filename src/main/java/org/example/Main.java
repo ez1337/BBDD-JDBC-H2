@@ -1,9 +1,8 @@
 package org.example;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -12,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -20,39 +21,36 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 public class Main {
+
+    private static double roundDouble(double value, int numDecimals) {
+        return new BigDecimal("" + value).setScale(numDecimals, RoundingMode.HALF_UP).doubleValue();
+    }
+
+
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         int respuesta;
-        String prueba = "./prueba.json";
+        String json = "./prediccion.json";
+        String ApiUrl ="https://servizos.meteogalicia.gal/apiv4/getNumericForecastInfo?locationIds=71953,71940,71954,71956,71933,71938,71934&variables=temperature,wind,sky_state,precipitation_amount,relative_humidity,cloud_area_fraction&API_KEY=4hk91p9mQV1qysT4PE1YJndSRCebJhd5E1uOf07nU1bcqiR0GN1qLy3SfkRp6f4B";
         URL url = null;
-        /*
-        try {
+        Path direccionArchivo = Paths.get("D:\\Predicciones\\25-11-2023-galicia.csv");
 
-            url = new URL("https:servizos.meteogalicia.gal/apiv4/getNumericForecastInfo?idConc=15003&variables=temperature,wind,sky_state,precipitation_amount,relative_humidity,cloud_area_fraction&API_KEY=4hk91p9mQV1qysT4PE1YJndSRCebJhd5E1uOf07nU1bcqiR0GN1qLy3SfkRp6f4B");
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }*/
         try {
             // Configurar la URL y la conexión HTTP
-            //url = new URL("https://servizos.meteogalicia.gal/apiv4/getNumericForecastInfo?coords=-8.396,43.37135&variables=temperature,wind,sky_state,precipitation_amount,relative_humidity,cloud_area_fraction&API_KEY=4hk91p9mQV1qysT4PE1YJndSRCebJhd5E1uOf07nU1bcqiR0GN1qLy3SfkRp6f4B");
-            url = new URL("https://servizos.meteogalicia.gal/mgrss/predicion/jsonPredConcellos.action?idConc=15078&variables=relative_humidity&API_KEY=4hk91p9mQV1qysT4PE1YJndSRCebJhd5E1uOf07nU1bcqiR0GN1qLy3SfkRp6f4B");
+            url = new URL(ApiUrl);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
-            // Leer JSON desde la URL
-            BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            StringBuilder jsonContent = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonContent.append(line);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+                StringBuilder stringBuilder = new StringBuilder();
+                String linea;
+                while ((linea = reader.readLine()) != null) {
+                    stringBuilder.append(linea);
+                }
+
+                // Escribir JSON en un archivo (sobrescribir el archivo existente)
+                Files.write(Paths.get(json), stringBuilder.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                System.out.println("Archivo escrito correctamente");
             }
-            reader.close();
-            // Escribir JSON en un archivo
-            Files.write(Paths.get(prueba), jsonContent.toString().getBytes(), StandardOpenOption.CREATE);
-            System.out.println("JSON escrito en el archivo exitosamente.");
         } catch (MalformedURLException e) {
             System.out.println("La URL es incorrecta: " + e.getMessage());
         } catch (IOException e) {
@@ -65,74 +63,218 @@ public class Main {
 
             switch(respuesta){
                 case 1:
+
                     try {
-                        // Leer JSON desde la URL
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-                        StringBuilder jsonContent = new StringBuilder();
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            jsonContent.append(line);
-                        }
-                        reader.close();
+                        List<Prediccion> predicciones = new ArrayList<>();
+                        Object obj = new JSONParser().parse(new FileReader("prediccion.json"));
+                        JSONObject objeto = (JSONObject) obj;
 
-                        // Escribir JSON en un archivo
-                        Files.write(Paths.get(prueba), jsonContent.toString().getBytes(), StandardOpenOption.CREATE);
-                        System.out.println("JSON escrito en el archivo exitosamente.");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    List<Prediccion> predicciones = new ArrayList<>();
-                    try {
-                        Object obj = (Object) new JSONParser().parse(new FileReader("prueba.json"));
-                        JSONObject jsonObject = (JSONObject) obj;
-                        JSONObject predConcello = (JSONObject) jsonObject.get("predConcello");
-                        JSONArray listaPredDiaConcello = (JSONArray) predConcello.get("listaPredDiaConcello");
-                        // Iterar sobre la lista de predicciones diarias
-                        for (Object predDiaObj : listaPredDiaConcello) {
-                            JSONObject predDia = (JSONObject) predDiaObj;
+                        // Obtener la lista de "features"
+                        JSONArray features = (JSONArray) objeto.get("features");
 
-                            String fechaPrediccion = (String) predDia.get("dataPredicion");
-                            // Extraer los datos de 'ceo' y 'vento'
-                            JSONObject vento = (JSONObject) predDia.get("vento");
-                            double ventoManha = ((Number) vento.get("manha")).doubleValue();
-                            double ventoTarde = ((Number) vento.get("tarde")).doubleValue();
-                            double ventoNoite = ((Number) vento.get("noite")).doubleValue();
+                        // Iterar sobre las features (cada una representa un punto de predicción)
+                        for (Object featureObj : features) {
+                            JSONObject feature = (JSONObject) featureObj;
+                            JSONObject propiedades = (JSONObject) feature.get("properties");
+                            String lugar = (String) propiedades.get("name");
 
-                            JSONObject pchoiva = (JSONObject) predDia.get("pchoiva");
+                            JSONArray dias = (JSONArray) propiedades.get("days");
+                            // Iterar sobre los días
+                            for (Object dayObj : dias) {
+                                JSONObject day = (JSONObject) dayObj;
 
-                            double temperaturaMax = ((Number) predDia.get("tMax")).doubleValue();
-                            double temperaturaMin = ((Number) predDia.get("tMin")).doubleValue();
+                                // Extraer periodo de tiempo
+                                JSONObject timePeriod = (JSONObject) day.get("timePeriod");
+                                String fechaCompleta = (String) ((JSONObject) timePeriod.get("begin")).get("timeInstant");
+                                String dia = fechaCompleta.split("T")[0]; // Extraer solo la fecha (antes de la "T")
 
-                            double precipitacionManha = ((Number) pchoiva.get("manha")).doubleValue();
-                            double precipitacionTarde = ((Number) pchoiva.get("tarde")).doubleValue();
-                            double precipitacionNoite = ((Number) pchoiva.get("noite")).doubleValue();
-                            JSONObject ceo = (JSONObject) predDia.get("ceo");
-                            double coberturaNubosaManha = ((Number) ceo.get("manha")).doubleValue();
-                            double coberturaNubosaTarde = ((Number) ceo.get("tarde")).doubleValue();
-                            double coberturaNubosaNoite = ((Number) ceo.get("noite")).doubleValue();
+                                JSONArray variables = (JSONArray) day.get("variables");
+                                double temperaturaMaxima = 0, temperaturaMinima = Double.MAX_VALUE;
+                                double viento = 0, precipitacion = 0, coberturaNubosa = 0, humedad = 0;
+                                List<String> cielo = new ArrayList<>(); // Lista para guardar estados del cielo
 
-//                            System.out.println("Fecha: " + fechaPrediccion);
-//                            System.out.println("Temperatura Máxima: " + temperaturaMax + ", Temperatura Mínima: " + temperaturaMin);
-//                            System.out.println("Precipitación (Mañana): " + precipitacionManha + ", Precipitación (Tarde): " + precipitacionTarde + ", Precipitación (Noche): " + precipitacionNoite);
-//                            System.out.println("Cobertura Nubosa (Mañana): " + coberturaNubosaManha + ", Cobertura Nubosa (Tarde): " + coberturaNubosaTarde + ", Cobertura Nubosa (Noche): " + coberturaNubosaNoite);
-//                            System.out.println("Vento (Mañana): " + ventoManha + ", Vento (Tarde): " + ventoTarde + ", Vento (Noche): " + ventoNoite);
-//                            System.out.println("-----------------------------------------------------------------------------------------------------------------------");
-                              Prediccion prediccion = new Prediccion( fechaPrediccion,  temperaturaMax, temperaturaMin, ventoManha, ventoTarde
-                                      , ventoNoite, precipitacionManha, precipitacionTarde, precipitacionNoite, coberturaNubosaManha, coberturaNubosaTarde, coberturaNubosaNoite );
-                              // Agregar la instancia a la lista
-                              predicciones.add(prediccion);
-                              // Imprimir los datos
-                              System.out.println(prediccion);
+                                // Extraer variables
+                                for (Object variableObj : variables) {
+                                    JSONObject variable = (JSONObject) variableObj;
+                                    String nombreVariable = (String) variable.get("name");
+
+                                    if ("temperature".equals(nombreVariable)) {
+                                        JSONArray valores = (JSONArray) variable.get("values");
+                                        for (Object valorObj : valores) {
+                                            JSONObject valor = (JSONObject) valorObj;
+                                            double temp = ((Number) valor.get("value")).doubleValue();
+                                            temperaturaMaxima = Math.max(temperaturaMaxima, temp);
+                                            temperaturaMinima = Math.min(temperaturaMinima, temp);
+                                        }
+                                    } else if ("wind".equals(nombreVariable)) {
+                                        JSONArray valores = (JSONArray) variable.get("values");
+                                        for (Object valorObj : valores) {
+                                            JSONObject valor = (JSONObject) valorObj;
+                                            viento += ((Number) valor.get("moduleValue")).doubleValue();
+                                        }
+                                    } else if ("precipitation_amount".equals(nombreVariable)) {
+                                        JSONArray valores = (JSONArray) variable.get("values");
+                                        for (Object valorObj : valores) {
+                                            JSONObject valor = (JSONObject) valorObj;
+                                            precipitacion += ((Number) valor.get("value")).doubleValue();
+                                            precipitacion = roundDouble(precipitacion, 2);
+                                        }
+                                    } else if ("cloud_area_fraction".equals(nombreVariable)) {
+                                        JSONArray valores = (JSONArray) variable.get("values");
+                                        for (Object valorObj : valores) {
+                                            JSONObject valor = (JSONObject) valorObj;
+                                            coberturaNubosa += ((Number) valor.get("value")).doubleValue();
+                                        }
+                                    } else if ("relative_humidity".equals(nombreVariable)) {
+                                        JSONArray valores = (JSONArray) variable.get("values");
+                                        for (Object valorObj : valores) {
+                                            JSONObject valor = (JSONObject) valorObj;
+                                            humedad += ((Number) valor.get("value")).doubleValue();
+                                        }
+                                    } else if ("sky_state".equals(nombreVariable)) {
+                                        JSONArray valores = (JSONArray) variable.get("values");
+                                        for (Object valorObj : valores) {
+                                            JSONObject valor = (JSONObject) valorObj;
+                                            String estadoCielo = (String) valor.get("value");
+
+                                            switch (estadoCielo) {
+                                                case "SUNNY":
+                                                    estadoCielo = "Soleado";
+                                                    break;
+                                                case "HIGH_CLOUDS":
+                                                    estadoCielo = "Nubes altas";
+                                                    break;
+                                                case "PARTLY_CLOUDY":
+                                                    estadoCielo = "Parcialmente nuboso";
+                                                    break;
+                                                case "OVERCAST":
+                                                    estadoCielo = "Nublado";
+                                                    break;
+                                                case "CLOUDY":
+                                                    estadoCielo = "Nuboso";
+                                                    break;
+                                                case "FOG":
+                                                    estadoCielo = "Niebla";
+                                                    break;
+                                                case "SHOWERS":
+                                                    estadoCielo = "Chubascos";
+                                                    break;
+                                                case "OVERCAST_AND_SHOWERS":
+                                                    estadoCielo = "Nublado con chubascos";
+                                                    break;
+                                                case "INTERMITENT_SNOW":
+                                                    estadoCielo = "Nieve intermitente";
+                                                    break;
+                                                case "DRIZZLE":
+                                                    estadoCielo = "Llovizna";
+                                                    break;
+                                                case "RAIN":
+                                                    estadoCielo = "Lluvia";
+                                                    break;
+                                                case "SNOW":
+                                                    estadoCielo = "Nieve";
+                                                    break;
+                                                case "STORMS":
+                                                    estadoCielo = "Tormentas";
+                                                    break;
+                                                case "MIST":
+                                                    estadoCielo = "Neblina";
+                                                    break;
+                                                case "FOG_BANK":
+                                                    estadoCielo = "Banco de niebla";
+                                                    break;
+                                                case "MID_CLOUDS":
+                                                    estadoCielo = "Nubes medias";
+                                                    break;
+                                                case "WEAK_RAIN":
+                                                    estadoCielo = "Lluvia débil";
+                                                    break;
+                                                case "WEAK_SHOWERS":
+                                                    estadoCielo = "Chubascos débiles";
+                                                    break;
+                                                case "STORM_THEN_CLOUDY":
+                                                    estadoCielo = "Tormenta y luego nuboso";
+                                                    break;
+                                                case "MELTED_SNOW":
+                                                    estadoCielo = "Nieve derretida";
+                                                    break;
+                                                case "RAIN_HayL":
+                                                    estadoCielo = "Granizo";
+                                                    break;
+                                                default:
+                                                    break;// No hacer nada si el valor no coincide con ninguno de los casos
+                                            }
+
+                                            if (!cielo.contains(estadoCielo)) {
+                                                cielo.add(estadoCielo); // Añadir solo si es un estado único
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Se hace el promedio de la velocidad del veinto, de la cobertura nubosa y l ahumedad
+                                int horas = ((JSONArray) ((JSONObject) variables.get(0)).get("values")).size();
+                                viento /= horas;
+                                viento = roundDouble(viento, 2);
+
+                                coberturaNubosa /= horas;
+                                coberturaNubosa = roundDouble(coberturaNubosa, 2);
+
+                                humedad /= horas;
+                                humedad = roundDouble(humedad, 2);
+
+                                // Crear instancia de predicción
+                                Prediccion prediccion = new Prediccion(lugar, dia, cielo, temperaturaMaxima, temperaturaMinima, precipitacion,
+                                        viento, coberturaNubosa,humedad);
+
+                                // Agregar la predicción a la lista
+                                predicciones.add(prediccion);
+
+                                // Imprimir los datos
+                                System.out.println(prediccion);
+                            }
                         }
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     } catch (org.json.simple.parser.ParseException e) {
                         throw new RuntimeException(e);
                     }
+
                     break;
                 case 2:
-                    break;
+                    System.out.println("Has seleccionado crear un archivo .csv con los resultados de distintas ciudades");
+                    try {
+                        // Se obtiene la ruta del directorio que contiene el archivo .csv
+                        Path pathDirectorio = direccionArchivo.getParent();
+                        // Si no existe dicho directorio, se crea, así como el archivo csv
+                        if (pathDirectorio != null && !Files.exists(pathDirectorio)) {
+                            Files.createDirectories(pathDirectorio);
+                        }
+                        if (!Files.exists(direccionArchivo)) {
+                            Files.createFile(direccionArchivo);
+                            try (BufferedWriter bw = new BufferedWriter(new FileWriter(direccionArchivo.toFile(), true))) {
+//                                String datos = prediccion.getLugar() + "," + prediccion.getDia() + "," + prediccion.getCielo() + ","
+//                                        + prediccion.getTemperaturaMaxima() + "," + prediccion.getTemperaturaMinima() + "," +
+//                                        prediccion.getPrecipitacion() + "," + prediccion.getViento() + "," +
+//                                        prediccion.getCoberturaNubosa() + "," + prediccion.getHumedad();
+//                                bw.write(datos);
+                                bw.newLine();
+                                System.out.println("Archivo CSV creado y datos escritos exitosamente.");
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
             }
         }while(respuesta != 3);
+
+
+    }
+
+    public void obtenerDatosMeteogalicia(){
+
     }
 }
