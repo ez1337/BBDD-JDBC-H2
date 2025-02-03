@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 import org.json.simple.JSONArray;
@@ -31,16 +32,25 @@ public class Main {
         String ApiUrl ="https://servizos.meteogalicia.gal/apiv4/getNumericForecastInfo?locationIds=71953,71940,71954,71956,71933,71938,71934&variables=temperature,wind,sky_state,precipitation_amount,relative_humidity,cloud_area_fraction&API_KEY=4hk91p9mQV1qysT4PE1YJndSRCebJhd5E1uOf07nU1bcqiR0GN1qLy3SfkRp6f4B";
         URL url = null;
         Path direccionArchivo = Paths.get("D:\\Predicciones\\25-11-2023-galicia.csv");
+
         List<Prediccion> predicciones = new ArrayList<>();
+        HashMap<Integer,Prediccion> predictions = new HashMap<>();
+
+        DatabaseUtil access = DatabaseUtil.getInstance();
+        access.getConnection();
+        access.initializeDatabase();
 
         conexionApi(url, ApiUrl, json);
 
         do{
-            System.out.println("Que accion deseas realizar? \n1.Mostrar datos en pantalla \n2.Generar archivo .csv con datos de las 7 ciudades importantes \n3.Salir");
+            System.out.println("Que accion deseas realizar? \n" +
+                    "1.Mostrar datos en pantalla \n" +
+                    "2.Generar archivo .csv con datos de las 7 ciudades importantes \n" +
+                    "3.Salir");
             respuesta = sc.nextInt();
             switch(respuesta){
                 case 1:
-                    generarPredicciones(predicciones);
+                    generarPredicciones(access);
                     if (predicciones.isEmpty()) {
                         System.out.println("No hay predicciones disponibles para mostrar.");
                     } else {
@@ -50,7 +60,7 @@ public class Main {
                     }
                     break;
                 case 2:
-                    generarPredicciones(predicciones);
+                    generarPredicciones(access);
                     escribirCSV(direccionArchivo, predicciones);
                 break;
             }
@@ -80,7 +90,7 @@ public class Main {
         }
     }
 
-    private static void generarPredicciones(List<Prediccion> predicciones){
+    private static void generarPredicciones(DatabaseUtil access){
         try {
             Object obj = new JSONParser().parse(new FileReader("prediccion.json"));
             JSONObject objeto = (JSONObject) obj;
@@ -240,7 +250,10 @@ public class Main {
                             viento, coberturaNubosa,humedad);
 
                     // Agregar la predicción a la lista
-                    predicciones.add(prediccion);
+//                    predicciones.add(prediccion);
+
+                    // Agregar predicciones a la base de datos
+                    access.savePrediction(prediccion);
                 }
             }
         } catch (IOException | ParseException e) {

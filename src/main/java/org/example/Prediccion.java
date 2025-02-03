@@ -1,5 +1,6 @@
 package org.example;
 
+import java.sql.*;
 import java.util.List;
 
 public class Prediccion {
@@ -26,6 +27,15 @@ public class Prediccion {
         this.humedad = humedad;
     }
 
+    public boolean prediccionValida(){
+        if(lugar.isEmpty() || lugar.isBlank() || fecha.isEmpty() || fecha.isBlank()
+        || estadoCielo.isEmpty() || temperaturaMax == 0.0d || temperaturaMin == 0.0d || precipitacionTotal == 0.0d
+        || viento == 0.0d || coberturaNubosa == 0.0d || humedad == 0.0d){
+            return false;
+        }
+        return true;
+    }
+
     public String getFecha() {
         return fecha;
     }
@@ -42,8 +52,12 @@ public class Prediccion {
         this.lugar = lugar;
     }
 
-    public List<String> getEstadoCielo() {
-        return estadoCielo;
+    public String getEstadoCielo() {
+        StringBuilder estados = new StringBuilder();
+        for(String s : estadoCielo){
+            estados.append(s).append(",");
+        }
+        return estados.toString();
     }
 
     public void setEstadoCielo(List<String> estadoCielo) {
