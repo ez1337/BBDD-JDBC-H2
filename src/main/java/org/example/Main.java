@@ -33,38 +33,53 @@ public class Main {
         URL url = null;
         Path direccionArchivo = Paths.get("D:\\Predicciones\\25-11-2023-galicia.csv");
 
-        List<Prediccion> predicciones = new ArrayList<>();
-        HashMap<Integer,Prediccion> predictions = new HashMap<>();
 
-        DatabaseUtil access = DatabaseUtil.getInstance();
-        access.getConnection();
-        access.initializeDatabase();
-
+        // Obtiene los datos de la API de predicciones y crea archivo JSON
         conexionApi(url, ApiUrl, json);
+
+        // Crea una instancia de la conexión a la base de datos, crea la tabla y guarda los
+        // datos del archivo JSON en la base de datos
+        DatabaseUtil access = DatabaseUtil.getInstance();
+        access.initializeDatabase();
+        generarPredicciones(access);
+
+        // Lee los datos del archivo JSON y los guarda en un mapa
+        HashMap<Integer,Prediccion> predictions = new HashMap<>();
+        predictions = access.getAllPredictions();
+
 
         do{
             System.out.println("Que accion deseas realizar? \n" +
-                    "1.Mostrar datos en pantalla \n" +
-                    "2.Generar archivo .csv con datos de las 7 ciudades importantes \n" +
-                    "3.Salir");
+                    "1. Mostrar datos en pantalla \n" +
+                    "2. Generar archivo .csv con datos de las 7 ciudades importantes \n" +
+                    "3. Borrar predicción \n" +
+                    "4. Modificar predicción \n" +
+                    "5. Salir");
             respuesta = sc.nextInt();
             switch(respuesta){
                 case 1:
-                    generarPredicciones(access);
-                    if (predicciones.isEmpty()) {
+                    if (predictions.isEmpty()) {
                         System.out.println("No hay predicciones disponibles para mostrar.");
                     } else {
-                        for (Prediccion p : predicciones) {
-                            System.out.println(p);
+                        for (int i : predictions.keySet()) {
+                            System.out.println(i+". "+predictions.get(i));
                         }
                     }
                     break;
                 case 2:
-                    generarPredicciones(access);
-                    escribirCSV(direccionArchivo, predicciones);
-                break;
+                    escribirCSV(direccionArchivo, predictions);
+                    break;
+                case 3:
+                    selectPredictionToDelete(access);
+                    break;
+                case 4:
+                    // modificar pred
+                    break;
+                case 5:
+                    System.out.println("Sesión finalizada.");
+                    break;
             }
-        }while(respuesta != 3);
+        }while(respuesta != 5);
     }
 
     private static void conexionApi(URL url, String ApiUrl, String json){
@@ -92,6 +107,7 @@ public class Main {
 
     private static void generarPredicciones(DatabaseUtil access){
         try {
+            int total = 0;
             Object obj = new JSONParser().parse(new FileReader("prediccion.json"));
             JSONObject objeto = (JSONObject) obj;
             // Obtener la lista de "features"
@@ -234,7 +250,7 @@ public class Main {
                             }
                         }
                     }
-                    // Se hace el promedio de la velocidad del veinto, de la cobertura nubosa y l ahumedad
+                    // Se hace el promedio de la velocidad del viento, de la cobertura nubosa y la humedad
                     int horas = ((JSONArray) ((JSONObject) variables.get(0)).get("values")).size();
                     viento /= horas;
                     viento = roundDouble(viento, 2);
@@ -249,19 +265,18 @@ public class Main {
                     Prediccion prediccion = new Prediccion(lugar, dia, cielo, temperaturaMaxima, temperaturaMinima, precipitacion,
                             viento, coberturaNubosa,humedad);
 
-                    // Agregar la predicción a la lista
-//                    predicciones.add(prediccion);
-
                     // Agregar predicciones a la base de datos
                     access.savePrediction(prediccion);
+                    total++;
                 }
             }
+            System.out.println("Total filas insertadas: "+total);
         } catch (IOException | ParseException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void escribirCSV(Path direccionArchivo, List<Prediccion> predicciones){
+    public static void escribirCSV(Path direccionArchivo, HashMap<Integer,Prediccion> predicciones){
         System.out.println("Has seleccionado crear un archivo .csv con los resultados de distintas ciudades");
         try {
             // Se obtiene la ruta del directorio que contiene el archivo .csv
@@ -284,7 +299,8 @@ public class Main {
                     return;
                 }
                 // Escribir datos
-                for (Prediccion prediccion : predicciones) {
+                for (int i : predicciones.keySet()) {
+                    Prediccion prediccion = predicciones.get(i);
                     String datos = prediccion.getLugar() + "," + prediccion.getFecha() + "," + prediccion.getEstadoCielo() + ","
                             + prediccion.getTemperaturaMax() + "," + prediccion.getTemperaturaMin() + ","
                             + prediccion.getPrecipitacionTotal() + "," + prediccion.getViento() + ","
@@ -298,5 +314,16 @@ public class Main {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    public static void selectPredictionToDelete(DatabaseUtil access){
+        HashMap<Integer, Prediccion> map = access.getAllPredictions();
+        Scanner sn = new Scanner(System.in);
+        for(int i : map.keySet()){
+            System.out.println(i+". "+map.get(i));
+        }
+        System.out.println("Selecciona un número de predicción para eliminar:");
+        int op = sn.nextInt();
+        access.deletePrediction(op);
     }
 }
