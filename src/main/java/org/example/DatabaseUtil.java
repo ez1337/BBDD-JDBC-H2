@@ -112,13 +112,8 @@ public class DatabaseUtil {
         HashMap<Integer,Prediccion> map = new HashMap<>();
         final String sql = "SELECT * FROM PREDICTION";
         try(Connection conn = DriverManager.getConnection(JDBC_URL, USER, PASSWORD);
-            PreparedStatement pstmt = conn.prepareStatement(sql)){
-            conn.setAutoCommit(false);
-
-            ResultSet rs = pstmt.executeQuery();
-
-            conn.commit();
-            conn.setAutoCommit(true);
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();){
 
             while(rs.next()){
                 int id = rs.getInt("ID");
@@ -132,7 +127,9 @@ public class DatabaseUtil {
                 double cloud = rs.getDouble("CLOUD_PERCENTAGE");
                 double humidity = rs.getDouble("RELATIVE_HUMIDITY");
 
-                Prediccion pred = new Prediccion(location,date,convertStringToList(skystat),maxTemp,minTemp,precipitation,windSpeed,cloud,humidity);
+                List<String> skyStatList = (skystat != null) ? convertStringToList(skystat) : new ArrayList<>();
+
+                Prediccion pred = new Prediccion(location,date,skyStatList,maxTemp,minTemp,precipitation,windSpeed,cloud,humidity);
                 map.put(id,pred);
 
             }

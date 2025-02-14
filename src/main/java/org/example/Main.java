@@ -53,8 +53,7 @@ public class Main {
                     "1. Mostrar datos en pantalla \n" +
                     "2. Generar archivo .csv con datos de las 7 ciudades importantes \n" +
                     "3. Borrar predicción \n" +
-                    "4. Modificar predicción \n" +
-                    "5. Salir");
+                    "4. Salir");
             respuesta = sc.nextInt();
             switch(respuesta){
                 case 1:
@@ -79,7 +78,7 @@ public class Main {
                     System.out.println("Sesión finalizada.");
                     break;
             }
-        }while(respuesta != 5);
+        }while(respuesta != 4);
     }
 
     private static void conexionApi(URL url, String ApiUrl, String json){
