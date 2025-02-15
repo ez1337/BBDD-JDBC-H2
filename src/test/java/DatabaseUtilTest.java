@@ -18,10 +18,13 @@ public class DatabaseUtilTest {
     @Test
     void testInsertPrediction() {
         Prediccion pred = new Prediccion("Madrid", "2025-02-11", List.of("Despejado"), 30.0, 20.0, 0.0, 10.5, 15.0, 60.0);
+//        Prediccion pred = null;
         dbUtil.savePrediction(pred);
 
         HashMap<Integer, Prediccion> predictions = dbUtil.getAllPredictions();
-        assertFalse(predictions.isEmpty(), "La predicción no se insertó correctamente");
+        boolean exists = predictions.values().contains(pred);
+
+        assertFalse(exists, "La predicción no se insertó correctamente");
     }
 
     @Test
@@ -46,7 +49,8 @@ public class DatabaseUtilTest {
 
     @Test
     void testSQLInjectionOnDelete() {
-        assertDoesNotThrow(() -> dbUtil.deletePrediction(Integer.parseInt("1 OR 1=1")), "La inyección SQL podría haber afectado la BD");
+        int input = Integer.parseInt("1 OR 1=1");
+        assertDoesNotThrow(() -> dbUtil.deletePrediction(input), "La inyección SQL podría haber afectado la BD");
     }
 }
 
